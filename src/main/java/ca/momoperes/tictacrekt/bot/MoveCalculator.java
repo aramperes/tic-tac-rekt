@@ -6,6 +6,7 @@ import ca.momoperes.tictacrekt.game.GameTile;
 import ca.momoperes.tictacrekt.game.TilePlayer;
 
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -51,11 +52,9 @@ public class MoveCalculator {
             memory = initRound2();
             return memory;
         }
-        if (rounds == 3) {
-            memory = respondRound2();
-            return memory;
-        }
-        return null;
+        // Any more rounds
+        memory = remaining();
+        return memory;
     }
 
     private GameTile initRound1() {
@@ -100,36 +99,77 @@ public class MoveCalculator {
         }
         // Corner
         for (Point point : CORNERS) {
-            if (board.tileAt(point.x, point.y).player != null) {
+            if (board.tileAt(point.x, point.y).player == null) {
                 return board.tileAt(point.x, point.y);
             }
         }
         return null;
     }
 
-    private GameTile respondRound2() {
-        //todo
-        return null;
-    }
-
-    private GameTile findToe(TilePlayer player) {
-        //todo
-        {
-            // Horizontal
-            for (int y = 0; y < 3; y++) {
-                int cnt = 0;
-
-                for (int x = 0; x < 3; x++) {
-                    if (board.tileAt(x, y).player != player) {
-                        break;
-                    }
-                }
-                if (cnt == 2) {
-
-                }
+    private GameTile remaining() {
+        GameTile[] ours = findToes(TilePlayer.OVAL);
+        if (ours.length > 0) {
+            System.out.println("We won, we got a toe");
+            return ours[0];
+        }
+        // Block if in defense
+        GameTile[] others = findToes(TilePlayer.CROSS);
+        if (others.length > 0) {
+            System.out.println("Blocked a toe");
+            return others[0];
+        }
+        System.out.println("Random pick, nothing to attack/defend");
+        // Select a random case. todo: strategy
+        GameTile[] remaining = new GameTile[board.tiles.size() - getPlayed().length];
+        int i = 0;
+        for (GameTile tile : board.tiles) {
+            if (tile.player == null) {
+                remaining[i++] = tile;
             }
         }
-        return null;
+        return remaining[ThreadLocalRandom.current().nextInt(remaining.length)];
+    }
+
+    private GameTile[] findToes(TilePlayer player) {
+        java.util.List<GameTile> tiles = new ArrayList<>();
+        // Horizontal
+        for (int y = 0; y < 3; y++) {
+            GameTile toe = null;
+            int count = 0, airCount = 0;
+            xes:
+            for (int x = 0; x < 3; x++) {
+                if (board.tileAt(x, y).player == player) {
+                    count++;
+                } else if (board.tileAt(x, y).player == null) {
+                    airCount++;
+                    toe = board.tileAt(x, y);
+                } else {
+                    break;
+                }
+            }
+            if (count == 2 && airCount == 1 && toe != null) {
+                tiles.add(toe);
+            }
+        }// Vertical
+        for (int x = 0; x < 3; x++) {
+            GameTile toe = null;
+            int count = 0, airCount = 0;
+            xes:
+            for (int y = 0; y < 3; y++) {
+                if (board.tileAt(x, y).player == player) {
+                    count++;
+                } else if (board.tileAt(x, y).player == null) {
+                    airCount++;
+                    toe = board.tileAt(x, y);
+                } else {
+                    break;
+                }
+            }
+            if (count == 2 && airCount == 1 && toe != null) {
+                tiles.add(toe);
+            }
+        }
+        return tiles.toArray(new GameTile[tiles.size()]);
     }
 
     private GameTile getOpposite(GameTile tile) {
@@ -194,7 +234,35 @@ public class MoveCalculator {
         return false;
     }
 
-    private int getRounds() {
+    public boolean hasWon(TilePlayer who) {
+        for (int y = 0; y < 3; y++) {
+            for (int x = 0; x < 3; x++) {
+                GameTile tile = board.tileAt(x, y);
+                if (tile.player != who) {
+                    break;
+                } else if (x == 2) {
+                    return true;
+                }
+            }
+        }
+        for (int x = 0; x < 3; x++) {
+            for (int y = 0; y < 3; y++) {
+                GameTile tile = board.tileAt(x, y);
+                if (tile.player != who) {
+                    break;
+                } else if (y == 2) {
+                    return true;
+                }
+            }
+        }
+        // Diagonal left-to-bottom
+        {
+            //todo
+        }
+        return false;
+    }
+
+    public int getRounds() {
         int count = 0;
         for (GameTile tile : board.tiles) {
             if (tile.player != null) {

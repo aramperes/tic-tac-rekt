@@ -11,7 +11,6 @@ import java.util.Scanner;
 public class Main {
 
     public static void main(String[] args) {
-
         GamePlayer player = new GamePlayer(TilePlayer.CROSS, "You");
         GamePlayer bot = new GamePlayer(TilePlayer.OVAL, "Bot");
         GameBoard board = new GameBoard(player, bot);
@@ -19,6 +18,15 @@ public class Main {
         board.nextTurn();
         System.out.println("[!] YOU ARE " + player.getTile());
         for(;;) {
+            if (calculator.getRounds() >= 9) {
+                board.done = true;
+            } else if (calculator.hasWon(TilePlayer.CROSS)) {
+                board.done = true;
+                board.winner = player;
+            } else if (calculator.hasWon(TilePlayer.OVAL)) {
+                board.done = true;
+                board.winner = bot;
+            }
             System.out.println("=================");
             for (int y = 0; y < 3; y++) {
                 String build = "";
@@ -34,6 +42,17 @@ public class Main {
                 }
                 System.out.println(build);
             }
+            if (board.done) {
+                GamePlayer winner = board.winner;
+                if (winner == null) {
+                    System.out.println("[!] Nobody won!");
+                } else if (winner.getTile() == TilePlayer.OVAL) {
+                    System.out.println("[!] Bot won, RIP");
+                } else if (winner.getTile() == TilePlayer.CROSS) {
+                    System.out.println("[!] You won!");
+                }
+                return;
+            }
             if (board.active != bot.getTile()) {
                 boolean needInput = true;
                 GameTile tile = null;
@@ -42,6 +61,9 @@ public class Main {
                     Scanner scanner = new Scanner(System.in);
                     String input = scanner.nextLine();
                     int x = Integer.valueOf(input.split(",")[0]), y = Integer.valueOf(input.split(",")[1]);
+                    if (x > 2 || y > 2) {
+                        continue;
+                    }
                     tile = board.tileAt(x, y);
                     if (tile.player != null) {
                         continue;

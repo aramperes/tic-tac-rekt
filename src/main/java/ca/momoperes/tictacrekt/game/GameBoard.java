@@ -8,6 +8,8 @@ public class GameBoard {
     public final GamePlayer bot, player;
     public TilePlayer active;
     public GameTile latest = null;
+    public GamePlayer winner = null;
+    public boolean done;
 
     public GameBoard(GamePlayer bot, GamePlayer player) {
         this.bot = bot;
