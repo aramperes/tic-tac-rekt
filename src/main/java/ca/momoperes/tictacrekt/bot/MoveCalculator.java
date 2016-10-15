@@ -28,14 +28,23 @@ public class MoveCalculator {
 
     public final GamePlayer bot;
     private GameBoard board;
+    private long waitTime;
     private GameTile memory = null;
 
-    public MoveCalculator(GamePlayer bot, GameBoard board) {
+    public MoveCalculator(GamePlayer bot, GameBoard board, long waitTime) {
         this.bot = bot;
         this.board = board;
+        this.waitTime = waitTime;
     }
 
     public GameTile selectMove() {
+        if (waitTime > 0) {
+            try {
+                Thread.sleep(waitTime);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
         int rounds = getRounds();
         if (rounds == 0) {
             // First round (initiating)
@@ -109,16 +118,13 @@ public class MoveCalculator {
     private GameTile remaining() {
         GameTile[] ours = findToes(TilePlayer.OVAL);
         if (ours.length > 0) {
-            System.out.println("We won, we got a toe");
             return ours[0];
         }
         // Block if in defense
         GameTile[] others = findToes(TilePlayer.CROSS);
         if (others.length > 0) {
-            System.out.println("Blocked a toe");
             return others[0];
         }
-        System.out.println("Random pick, nothing to attack/defend");
         // Select a random case. todo: strategy
         GameTile[] remaining = new GameTile[board.tiles.size() - getPlayed().length];
         int i = 0;
@@ -161,6 +167,47 @@ public class MoveCalculator {
                 } else if (board.tileAt(x, y).player == null) {
                     airCount++;
                     toe = board.tileAt(x, y);
+                } else {
+                    break;
+                }
+            }
+            if (count == 2 && airCount == 1 && toe != null) {
+                tiles.add(toe);
+            }
+        }
+        // Diagonal bottom-to-right
+        {
+            GameTile toe = null;
+            int count = 0, airCount = 0;
+            xes:
+            for (int x = 0; x < 3; x++) {
+                int y = Math.abs(x - 2);
+                GameTile tile = board.tileAt(x, y);
+                if (tile.player == player) {
+                    count++;
+                } else if (tile.player == null) {
+                    airCount++;
+                    toe = tile;
+                } else {
+                    break;
+                }
+            }
+            if (count == 2 && airCount == 1 && toe != null) {
+                tiles.add(toe);
+            }
+        }
+        // Diagonal bottom-to-right
+        {
+            GameTile toe = null;
+            int count = 0, airCount = 0;
+            xes:
+            for (int y = 0; y < 3; y++) {
+                GameTile tile = board.tileAt(y, y);
+                if (tile.player == player) {
+                    count++;
+                } else if (tile.player == null) {
+                    airCount++;
+                    toe = tile;
                 } else {
                     break;
                 }
@@ -256,8 +303,23 @@ public class MoveCalculator {
             }
         }
         // Diagonal left-to-bottom
-        {
-            //todo
+        for (int y = 0; y < 3; y++) {
+            GameTile tile = board.tileAt(y, y);
+            if (tile.player != who) {
+                break;
+            } else if (y == 2) {
+                return true;
+            }
+        }
+        // Diagonal bottom-to-right
+        for (int x = 0; x < 3; x++) {
+            int y = Math.abs(x - 2);
+            GameTile tile = board.tileAt(x, y);
+            if (tile.player != who) {
+                break;
+            } else if (x == 2) {
+                return true;
+            }
         }
         return false;
     }
